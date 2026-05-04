@@ -1,81 +1,214 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/SHM9MYZJ)
-# Valura AI — Team Lead Project Assignment
+# Valura AI — AI Microservice Assignment
 
-You have been given access to this repository as part of the Valura AI team lead hiring process.
+## Overview
 
-**Read [`ASSIGNMENT.md`](ASSIGNMENT.md) in full before writing a single line of code.**
-
----
-
-## What you're building
-
-An AI agent ecosystem that helps a novice investor **build, monitor, grow, and protect** their portfolio. See [`ASSIGNMENT.md`](ASSIGNMENT.md) for the full mission, scope, and constraints.
+This project implements a FastAPI-based AI microservice that acts as an intelligent assistant for investors.
+It processes user queries, ensures safety, classifies intent, routes to appropriate agents, and streams responses in real time using Server-Sent Events (SSE).
 
 ---
 
-## Setup
+##  Features
 
-**Requirements:** Python 3.11+, an OpenAI API key.
+### Safety Guard
 
-**Persistence is your choice.** Postgres, SQLite, or in-memory — pick one and defend it in your README. `DATABASE_URL` in `.env.example` is optional.
+* Runs before any LLM call
+* Blocks harmful queries (insider trading, manipulation, etc.)
+* No external calls (fast execution <10ms)
 
-**Streaming is required.** SSE only. Use `sse-starlette`, FastAPI's `StreamingResponse`, or roll your own — your call.
+### Intent Classifier
 
-```bash
-git clone <your-classroom-repo-url>
-cd <repo-name>
+* Uses LLM to classify:
 
-python -m venv venv
-source venv/bin/activate        # Linux/macOS
-venv\Scripts\activate           # Windows
+  * Intent
+  * Entities (tickers, amount, etc.)
+  * Target agent
+  * Safety metadata
+* Handles follow-up queries using history
 
-pip install -r requirements.txt
+### Portfolio Health Agent
 
-cp .env.example .env
-# Fill in OPENAI_API_KEY
+* Analyzes user portfolio
+* Provides:
+
+  * Concentration risk
+  * Performance metrics
+  * Benchmark comparison
+  * Actionable insights
+* Handles empty portfolio case
+* Includes disclaimer
+
+### Routing System
+
+* Routes queries to appropriate agent
+* Returns structured response for unimplemented agents
+
+### Streaming API (SSE)
+
+* Real-time response streaming
+* Event-based communication:
+
+  * status
+  * classification
+  * data
+  * error
+
+---
+
+## Project Structure
+
+```
+src/
+ ├── api/            # FastAPI routes
+ ├── guards/         # Safety guard
+ ├── classifier/     # Intent classifier
+ ├── router/         # Request dispatcher
+ ├── agents/         # Portfolio health agent
+ ├── services/       # LLM service
+ ├── models/         # Pydantic models
+
+tests/               # Pytest test cases
 ```
 
-Use `gpt-4o-mini` while developing to keep costs down. Evaluation runs against `gpt-4.1`.
+---
+
+## Setup Instructions
+
+### 1. Clone repo
+
+```
+git clone <your-repo-url>
+cd valura-ai-assignment
+```
 
 ---
 
-## Running Tests
+### 2. Create virtual environment
 
-```bash
+```
+python -m venv venv
+venv\Scripts\activate   # Windows
+```
+
+---
+
+### 3. Install dependencies
+
+```
+pip install -r requirements.txt
+```
+
+---
+
+### 4. Create `.env` file
+
+```
+OPENAI_API_KEY=your_api_key_here
+```
+
+---
+
+### 5. Run server
+
+```
+python -m uvicorn src.main:app --reload
+```
+
+---
+
+### 6. Open API docs
+
+```
+http://127.0.0.1:8000/docs
+```
+
+---
+
+##  API Usage
+
+### Streaming Endpoint
+
+POST `/query`
+
+Example request:
+
+```json
+{
+  "query": "How is my portfolio doing?",
+  "context": {
+    "portfolio": [
+      {"ticker": "NVDA", "value": 60000},
+      {"ticker": "AAPL", "value": 20000}
+    ]
+  },
+  "history": []
+}
+```
+
+---
+
+### Demo Endpoint (Non-streaming)
+
+POST `/query-test`
+
+---
+
+## Testing
+
+Run:
+
+```
 pytest tests/ -v
 ```
 
-Tests must pass without an `OPENAI_API_KEY` set — mock the LLM. We will run `pytest tests/ -v` on your repo.
+* LLM calls are mocked
+* Ensures CI runs without API key
 
 ---
 
-## Repository Structure
+## Performance Considerations
 
-When you submit, your repository must contain:
+* Safety guard <10ms (no external calls)
+* Single LLM call for classification
+* Lightweight streaming using SSE
+* Designed to meet:
 
-```
-README.md   ← overwrite this with your own (setup, decisions, library choices, video link)
-src/        ← all code
-tests/      ← all tests, must pass with pytest
-```
-
-`fixtures/`, `pytest.ini`, `requirements.txt`, `.env.example`, and `.github/` are part of the scaffold — leave them in place. Do not delete `ASSIGNMENT.md`.
+  * <2s first token latency
+  * <6s full response time
 
 ---
 
-## Submission
+## Safety Design
 
-- Push commits **throughout** your work — we read the git log
-- Your `README.md` must:
-  - Explain how to run your code
-  - List every required environment variable
-  - Document the non-obvious decisions you made
-  - Link your defence video (≤ 10 min — see `ASSIGNMENT.md`)
-- Deadline: **3 days** from the date you accepted this assignment
-- Defence video: due within **24 hours** of your final commit
+* Blocks:
+
+  * Insider trading
+  * Market manipulation
+  * Guaranteed returns
+* Allows educational queries
 
 ---
 
-## Environment
+## Trade-offs
 
-You self-host everything. We do not provide credentials. See `.env.example` for the variables you'll need.
+* In-memory session storage for simplicity
+* Mocked LLM in tests instead of real API
+* Basic portfolio calculations (can be extended with real market data)
+
+---
+
+## Future Improvements
+
+* Add more agents (market research, strategy, etc.)
+* Integrate real-time market APIs
+* Add caching for repeated queries
+* Improve classifier accuracy with embeddings
+
+---
+
+## Defence Video
+
+(Add your video link here)
+
+---
+
+
